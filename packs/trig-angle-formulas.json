@@ -1,0 +1,963 @@
+{
+  "metadata": {
+    "name": "Trigonometric Angle Formulas",
+    "id": "trig-angle-formulas",
+    "version": "1.1.0",
+    "author": "Formula Trainer",
+    "subject": "math",
+    "description": "สูตรมุมสองเท่า, ครึ่งมุม, สามเท่า และผลคูณ-ผลบวก (Double/Half/Triple Angle, Product-to-Sum, Sum-to-Product)",
+    "schemaVersion": 1
+  },
+  "items": [
+    {
+      "id": "trig-angle-formulas-01",
+      "prompt": "sin(2A) = ?",
+      "answerTokens": [
+        "2sin(A)",
+        "cos(A)"
+      ],
+      "availableTokens": [
+        "y",
+        "2cos((A+B)/2)",
+        "2sin(A)",
+        "−",
+        "cos(A)",
+        "sin²(A)",
+        "1"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-02",
+      "prompt": "sin(2A) = ?",
+      "answerTokens": [
+        "2tan(A)",
+        "1",
+        "+",
+        "tan²(A)"
+      ],
+      "availableTokens": [
+        "3sin(A)",
+        "cot³(A)",
+        "2cos²(A/2)",
+        "2sin((A+B)/2)",
+        "2cos((A+B)/2)",
+        "2sin(A)",
+        "tan²(A)",
+        "3cot(A)",
+        "2tan(A)",
+        "+",
+        "1"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-03",
+      "prompt": "cos(2A) = ?",
+      "answerTokens": [
+        "cos²(A)",
+        "−",
+        "sin²(A)"
+      ],
+      "availableTokens": [
+        "3cot²(A)",
+        "3tan(A)",
+        "2",
+        "sin²(A)",
+        "3sin(A)",
+        "x",
+        "cos²(A)",
+        "y",
+        "−"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-04",
+      "prompt": "cos(2A) = ?",
+      "answerTokens": [
+        "2cos²(A)",
+        "−",
+        "1"
+      ],
+      "availableTokens": [
+        "cos(A-B)",
+        "2cos²(A)",
+        "−",
+        "3cos(A)",
+        "sin((A-B)/2)",
+        "3tan²(A)",
+        "2tan(A)",
+        "sin(A-B)",
+        "1"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-05",
+      "prompt": "cos(2A) = ?",
+      "answerTokens": [
+        "1",
+        "−",
+        "2sin²(A)"
+      ],
+      "availableTokens": [
+        "2sin²(A)",
+        "2cos²(A/2)",
+        "−",
+        "2sin(A)",
+        "sin((A-B)/2)",
+        "1",
+        "θ",
+        "cos(A-B)",
+        "cot²(A)"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-06",
+      "prompt": "cos(2A) = ?",
+      "answerTokens": [
+        "1",
+        "−",
+        "tan²(A)",
+        "1",
+        "+",
+        "tan²(A)"
+      ],
+      "availableTokens": [
+        "tan²(A)",
+        "1",
+        "tan²(A)",
+        "sin(A-B)",
+        "θ",
+        "0",
+        "sin²(A)",
+        "3sin(A)",
+        "−",
+        "4sin³(A)",
+        "2tan(A)",
+        "1",
+        "√",
+        "+",
+        "cos((A-B)/2)"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-07",
+      "prompt": "tan(2A) = ?",
+      "answerTokens": [
+        "2tan(A)",
+        "1",
+        "−",
+        "tan²(A)"
+      ],
+      "availableTokens": [
+        "tan²(A)",
+        "1",
+        "=",
+        "sin(A-B)",
+        "4sin³(A)",
+        "2cos((A+B)/2)",
+        "−",
+        "2tan(A)",
+        "sin(A+B)",
+        "3sin(A)",
+        "2sin(A)"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "@",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-08",
+      "prompt": "cot(2A) = ?",
+      "answerTokens": [
+        "cot²(A)",
+        "−",
+        "1",
+        "2cot(A)"
+      ],
+      "availableTokens": [
+        "cos(A+B)",
+        "2cot(A)",
+        "y",
+        "cot²(A)",
+        "2sin((A+B)/2)",
+        "cot³(A)",
+        "cos(A)",
+        "sin((A-B)/2)",
+        "1",
+        "−",
+        "+"
+      ],
+      "metadata": {
+        "difficulty": 2,
+        "tags": [
+          "double-angle"
+        ],
+        "chapter": "Double Angle"
+      },
+      "structure": [
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-09",
+      "prompt": "cos(A) = ?",
+      "answerTokens": [
+        "2cos²(A/2)",
+        "−",
+        "1"
+      ],
+      "availableTokens": [
+        "2sin((A+B)/2)",
+        "1",
+        "sin(A+B)",
+        "4cos³(A)",
+        "−",
+        "=",
+        "2cos²(A/2)",
+        "3cot(A)",
+        "4sin³(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-10",
+      "prompt": "cos(A) = ?",
+      "answerTokens": [
+        "1",
+        "−",
+        "2sin²(A/2)"
+      ],
+      "availableTokens": [
+        "4cos³(A)",
+        "1",
+        "2sin²(A)",
+        "−",
+        "sin((A-B)/2)",
+        "3tan(A)",
+        "2sin²(A/2)",
+        "+",
+        "tan²(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-11",
+      "prompt": "cos(A/2) = ?",
+      "answerTokens": [
+        "1",
+        "+",
+        "cos(A)",
+        "2"
+      ],
+      "availableTokens": [
+        "cos(A)",
+        "2sin²(A)",
+        "1",
+        "2",
+        "2cos²(A)",
+        "2cos((A+B)/2)",
+        "3cot²(A)",
+        "√",
+        "2tan(A)",
+        "4cos³(A)",
+        "+"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "±√",
+        "(",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-12",
+      "prompt": "sin(A/2) = ?",
+      "answerTokens": [
+        "1",
+        "−",
+        "cos(A)",
+        "2"
+      ],
+      "availableTokens": [
+        "y",
+        "1",
+        "2cos²(A/2)",
+        "2cos²(A)",
+        "2sin²(A/2)",
+        "2",
+        "3tan(A)",
+        "4cos³(A)",
+        "−",
+        "cos(A)",
+        "="
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "±√",
+        "(",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-13",
+      "prompt": "tan(A/2) = ?",
+      "answerTokens": [
+        "1",
+        "−",
+        "cos(A)",
+        "1",
+        "+",
+        "cos(A)"
+      ],
+      "availableTokens": [
+        "3sin(A)",
+        "cos(A)",
+        "y",
+        "1",
+        "x",
+        "cos(A+B)",
+        "+",
+        "2cos²(A/2)",
+        "2cot(A)",
+        "3tan²(A)",
+        "−",
+        "1",
+        "sin(A+B)",
+        "2tan(A)",
+        "cos(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "±√",
+        "(",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-14",
+      "prompt": "cot(A/2) = ?",
+      "answerTokens": [
+        "1",
+        "+",
+        "cos(A)",
+        "1",
+        "−",
+        "cos(A)"
+      ],
+      "availableTokens": [
+        "2cos²(A/2)",
+        "3cos(A)",
+        "1",
+        "²",
+        "cos(A)",
+        "4sin³(A)",
+        "2cos²(A)",
+        "1",
+        "−",
+        "cot³(A)",
+        "cos(A)",
+        "+",
+        "2sin²(A/2)",
+        "2cot(A)",
+        "2sin²(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "half-angle"
+        ],
+        "chapter": "Half Angle"
+      },
+      "structure": [
+        "±√",
+        "(",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-15",
+      "prompt": "sin(3A) = ?",
+      "answerTokens": [
+        "3sin(A)",
+        "−",
+        "4sin³(A)"
+      ],
+      "availableTokens": [
+        "1",
+        "2cos²(A/2)",
+        "2cos((A+B)/2)",
+        "3sin(A)",
+        "4sin³(A)",
+        "2sin((A+B)/2)",
+        "tan³(A)",
+        "2tan(A)",
+        "−"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "triple-angle"
+        ],
+        "chapter": "Triple Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-16",
+      "prompt": "cos(3A) = ?",
+      "answerTokens": [
+        "4cos³(A)",
+        "−",
+        "3cos(A)"
+      ],
+      "availableTokens": [
+        "4cos³(A)",
+        "√",
+        "2cot(A)",
+        "cos((A-B)/2)",
+        "3cos(A)",
+        "−",
+        "sin((A-B)/2)",
+        "tan²(A)",
+        "2"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "triple-angle"
+        ],
+        "chapter": "Triple Angle"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-17",
+      "prompt": "tan(3A) = ?",
+      "answerTokens": [
+        "3tan(A)",
+        "−",
+        "tan³(A)",
+        "1",
+        "−",
+        "3tan²(A)"
+      ],
+      "availableTokens": [
+        "−",
+        "3tan²(A)",
+        "2tan(A)",
+        "3tan(A)",
+        "cos(A+B)",
+        "tan³(A)",
+        "sin²(A)",
+        "2sin(A)",
+        "2sin((A+B)/2)",
+        "−",
+        "3cot²(A)",
+        "1",
+        "4cos³(A)",
+        "2cos²(A)",
+        "√"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "triple-angle"
+        ],
+        "chapter": "Triple Angle"
+      },
+      "structure": [
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-18",
+      "prompt": "cot(3A) = ?",
+      "answerTokens": [
+        "cot³(A)",
+        "−",
+        "3cot(A)",
+        "3cot²(A)",
+        "−",
+        "1"
+      ],
+      "availableTokens": [
+        "−",
+        "2sin²(A)",
+        "3cot(A)",
+        "sin((A-B)/2)",
+        "3cot²(A)",
+        "cos(A+B)",
+        "cot³(A)",
+        "2cos((A+B)/2)",
+        "sin(A+B)",
+        "1",
+        "3cos(A)",
+        "2cos²(A/2)",
+        "x",
+        "√",
+        "−"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "triple-angle"
+        ],
+        "chapter": "Triple Angle"
+      },
+      "structure": [
+        "(",
+        "@",
+        "@",
+        "@",
+        ")",
+        "/",
+        "(",
+        "@",
+        "@",
+        "@",
+        ")"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-19",
+      "prompt": "2sin(A)cos(B) = ?",
+      "answerTokens": [
+        "sin(A+B)",
+        "+",
+        "sin(A-B)"
+      ],
+      "availableTokens": [
+        "0",
+        "sin(A+B)",
+        "cot²(A)",
+        "sin(A-B)",
+        "3sin(A)",
+        "sin((A-B)/2)",
+        "cos((A-B)/2)",
+        "+",
+        "3tan²(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "product-to-sum"
+        ],
+        "chapter": "Product to Sum"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-20",
+      "prompt": "2cos(A)sin(B) = ?",
+      "answerTokens": [
+        "sin(A+B)",
+        "−",
+        "sin(A-B)"
+      ],
+      "availableTokens": [
+        "sin(A-B)",
+        "θ",
+        "sin(A+B)",
+        "0",
+        "²",
+        "−",
+        "2tan(A)",
+        "cot³(A)",
+        "cos(A-B)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "product-to-sum"
+        ],
+        "chapter": "Product to Sum"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-21",
+      "prompt": "2cos(A)cos(B) = ?",
+      "answerTokens": [
+        "cos(A+B)",
+        "+",
+        "cos(A-B)"
+      ],
+      "availableTokens": [
+        "4cos³(A)",
+        "cos(A-B)",
+        "θ",
+        "+",
+        "3cos(A)",
+        "tan³(A)",
+        "sin(A+B)",
+        "cos(A+B)",
+        "sin²(A)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "product-to-sum"
+        ],
+        "chapter": "Product to Sum"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-22",
+      "prompt": "2sin(A)sin(B) = ?",
+      "answerTokens": [
+        "cos(A-B)",
+        "−",
+        "cos(A+B)"
+      ],
+      "availableTokens": [
+        "−",
+        "√",
+        "cot³(A)",
+        "2sin((A+B)/2)",
+        "cos(A-B)",
+        "θ",
+        "x",
+        "cos((A-B)/2)",
+        "cos(A+B)"
+      ],
+      "metadata": {
+        "difficulty": 3,
+        "tags": [
+          "product-to-sum"
+        ],
+        "chapter": "Product to Sum"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-23",
+      "prompt": "sin(A)+sin(B) = ?",
+      "answerTokens": [
+        "2sin((A+B)/2)",
+        "cos((A-B)/2)"
+      ],
+      "availableTokens": [
+        "cos((A-B)/2)",
+        "cos(A+B)",
+        "cos(A)",
+        "²",
+        "2",
+        "2cos²(A/2)",
+        "2sin((A+B)/2)"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "sum-to-product"
+        ],
+        "chapter": "Sum to Product"
+      },
+      "structure": [
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-24",
+      "prompt": "sin(A)-sin(B) = ?",
+      "answerTokens": [
+        "2cos((A+B)/2)",
+        "sin((A-B)/2)"
+      ],
+      "availableTokens": [
+        "4sin³(A)",
+        "θ",
+        "cot²(A)",
+        "sin((A-B)/2)",
+        "sin²(A)",
+        "cos²(A)",
+        "2cos((A+B)/2)"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "sum-to-product"
+        ],
+        "chapter": "Sum to Product"
+      },
+      "structure": [
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-25",
+      "prompt": "cos(A)+cos(B) = ?",
+      "answerTokens": [
+        "2cos((A+B)/2)",
+        "cos((A-B)/2)"
+      ],
+      "availableTokens": [
+        "3tan(A)",
+        "2cos((A+B)/2)",
+        "x",
+        "cos((A-B)/2)",
+        "3tan²(A)",
+        "+",
+        "2"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "sum-to-product"
+        ],
+        "chapter": "Sum to Product"
+      },
+      "structure": [
+        "@",
+        "@"
+      ]
+    },
+    {
+      "id": "trig-angle-formulas-26",
+      "prompt": "cos(A)-cos(B) = ?",
+      "answerTokens": [
+        "−",
+        "2sin((A+B)/2)",
+        "sin((A-B)/2)"
+      ],
+      "availableTokens": [
+        "y",
+        "3cot(A)",
+        "−",
+        "2cot(A)",
+        "sin((A-B)/2)",
+        "cos((A-B)/2)",
+        "√",
+        "3cos(A)",
+        "2sin((A+B)/2)"
+      ],
+      "metadata": {
+        "difficulty": 4,
+        "tags": [
+          "sum-to-product"
+        ],
+        "chapter": "Sum to Product"
+      },
+      "structure": [
+        "@",
+        "@",
+        "@"
+      ]
+    }
+  ]
+}

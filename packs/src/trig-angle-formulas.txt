@@ -1,0 +1,43 @@
+# Trigonometric Angle Formulas
+@name: Trigonometric Angle Formulas
+@id: trig-angle-formulas
+@version: 1.1.0
+@author: Formula Trainer
+@subject: math
+@description: สูตรมุมสองเท่า, ครึ่งมุม, สามเท่า และผลคูณ-ผลบวก (Double/Half/Triple Angle, Product-to-Sum, Sum-to-Product)
+
+=== Double Angle ===
+sin(2A) = 2sin(A)cos(A)
+sin(2A) = 2tan(A)/(1+tan²(A))
+cos(2A) = cos²(A)-sin²(A)
+cos(2A) = 2cos²(A)-1
+cos(2A) = 1-2sin²(A)
+cos(2A) = (1-tan²(A))/(1+tan²(A))
+tan(2A) = 2tan(A)/(1-tan²(A))
+cot(2A) = (cot²(A)-1)/(2cot(A))
+
+=== Half Angle ===
+cos(A) = 2cos²(A/2)-1
+cos(A) = 1-2sin²(A/2)
+cos(A/2) = ±√((1+cos(A))/2)
+sin(A/2) = ±√((1-cos(A))/2)
+tan(A/2) = ±√((1-cos(A))/(1+cos(A)))
+cot(A/2) = ±√((1+cos(A))/(1-cos(A)))
+
+=== Triple Angle ===
+sin(3A) = 3sin(A)-4sin³(A)
+cos(3A) = 4cos³(A)-3cos(A)
+tan(3A) = (3tan(A)-tan³(A))/(1-3tan²(A))
+cot(3A) = (cot³(A)-3cot(A))/(3cot²(A)-1)
+
+=== Product to Sum ===
+2sin(A)cos(B) = sin(A+B)+sin(A-B)
+2cos(A)sin(B) = sin(A+B)-sin(A-B)
+2cos(A)cos(B) = cos(A+B)+cos(A-B)
+2sin(A)sin(B) = cos(A-B)-cos(A+B)
+
+=== Sum to Product ===
+sin(A)+sin(B) = 2sin((A+B)/2)cos((A-B)/2)
+sin(A)-sin(B) = 2cos((A+B)/2)sin((A-B)/2)
+cos(A)+cos(B) = 2cos((A+B)/2)cos((A-B)/2)
+cos(A)-cos(B) = -2sin((A+B)/2)sin((A-B)/2)
