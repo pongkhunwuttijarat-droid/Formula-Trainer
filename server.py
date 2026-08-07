@@ -19,6 +19,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass  # quiet
 
-with socketserver.ThreadingTCPServer(("", PORT), Handler) as httpd:
+class Server(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True  # must be set BEFORE bind (TIME_WAIT restart)
+
+with Server(("", PORT), Handler) as httpd:
     print(f"serving {DIRECTORY} on :{PORT} (no-cache)")
     httpd.serve_forever()
