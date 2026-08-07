@@ -1,0 +1,22 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Python (dev server)
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+nohup.out
+
+# Node (tests are dependency-free; future-proof)
+node_modules/
+
+# Build output
+dist/
+build/
