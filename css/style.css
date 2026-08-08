@@ -422,6 +422,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .match-card:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .match-card:active:not(:disabled) { transform: translateY(1px); }
 .match-card .formula { font-size: 0.92rem; font-weight: 600; line-height: 1.4; }
+/* deck only: card formulas must never overflow the card. The formula is a flex
+   item with min-width:auto by default, so it cannot shrink below its content
+   width; the .frac rows (.frac-num/.frac-den) are non-wrapping flex rows that
+   poke out of a shrunken .frac. Fix: let every layer shrink and wrap, and use
+   slightly tighter token spacing so wrapped cards stay compact. Construction /
+   reverse modes render no .match-card, so these rules never apply there. */
+.match-card .formula { min-width: 0; max-width: 100%; letter-spacing: 0; }
+.match-card .formula-rhs { max-width: 100%; gap: 4px; }
+.match-card .frac { min-width: 0; max-width: 100%; margin: 2px 2px; }
+.match-card .frac-num, .match-card .frac-den { gap: 3px; padding-left: 4px; padding-right: 4px; min-width: 0; flex-wrap: wrap; }
+.match-card .formula-part { padding: 2px 2px; }
+.match-card .rad { min-width: 0; max-width: 100%; }
+.match-card .rad-body { max-width: 100%; gap: 3px; }
 .match-card .formula-part { font-size: 0.88rem; }
 .match-card .struct-chip { font-size: 0.88rem; padding: 2px 6px; }
 .match-card .frac .formula-part { font-size: 0.85rem; }
@@ -453,6 +466,58 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
   color: var(--wrong);
 }
 @media (max-width: 480px) { .match-wall { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
+
+/* deck drag-and-drop selection: source card mid-drag + left target highlight */
+.match-card.dragging {
+  opacity: 0.55;
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+.question-card.drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------- play: deck — card pile scrolls independently ----------
+   In deck mode the whole game is pinned to the viewport: the body never
+   scrolls, the left target/question stays visible, and only the card pile
+   (match-scroll) scrolls. Construction/reverse modes are unaffected. */
+.game-shell--deck {
+  height: calc(100vh - var(--nav-h) - 96px);
+  height: calc(100dvh - var(--nav-h) - 96px);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.game-shell--deck .game-topbar { flex: none; }
+.game-shell--deck .game-panes {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.game-shell--deck .game-left { align-self: start; } /* target stays at top, natural height */
+.game-shell--deck .game-right {
+  min-height: 0;
+  gap: 10px;
+}
+.game-shell--deck .match-label { flex: none; }
+.game-shell--deck .match-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.match-scroll::-webkit-scrollbar { width: 8px; }
+.match-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.match-scroll { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+@media (max-width: 760px) {
+  .game-shell--deck { height: calc(100dvh - var(--nav-h) - 106px); }
+  .game-shell--deck .game-panes { grid-template-rows: auto minmax(0, 1fr); }
+}
 
 .game-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .game-progress { display: flex; align-items: center; gap: 10px; min-width: 200px; flex: 1; }

@@ -205,78 +205,96 @@ t('construction: session finishes after last item', () => {
   eq(E.storage.getActiveSessionId(), ''); // active cleared
   eq(session.stats.attempts, 3);
 });
-t('deck: wrong picks consume nothing; correct picks consume the card', () => {
+t('deck: click budget = 2× group size, exposed via questionOf', () => {
   const pack = freshSession();
   const { session } = E.session.createSession(pack, 'deck', { shuffle: false });
-  E.session.answer(session, pack, 'nonexistent'); // wrong pick
-  eq(session.index, 0); // NOT advanced
+  const q = E.session.questionOf(session, pack);
+  // freshSession items are all singletons (different LHS) -> group of 1 -> budget 2
+  eq(q.attemptsLeft, 2, 'single-card group gets 2 clicks');
+  eq(q.budget, 2);
+  ok(q.options.length >= 1);
+  ok(q.options.every((o) => !o.verdict), 'nothing flipped at start');
+});
+t('deck: wrong picks spend a click but never advance or consume', () => {
+  const pack = freshSession();
+  const { session } = E.session.createSession(pack, 'deck', { shuffle: false });
+  const before = session.currentItemId;
+  const r = E.session.answer(session, pack, 'nonexistent'); // wrong pick
+  eq(r.correct, false);
+  eq(session.index, 0, 'NOT advanced');
+  eq(session.currentItemId, before, 'question unchanged');
+  eq(session.deckAttempts, 1, 'wrong pick spent one click');
   eq(session.stats.wrong, 1);
   ok(session.wrongIds.length >= 1);
-  E.session.answer(session, pack, session.currentItemId); // correct
-  eq(session.index, 1);
-  E.session.answer(session, pack, session.currentItemId);
-  eq(session.index, 2);
-  E.session.answer(session, pack, session.currentItemId);
-  eq(session.status, 'finished');
-  eq(session.stats.attempts, 4);
-  eq(session.stats.correct, 3);
-  eq(session.stats.wrong, 1);
+  const q = E.session.questionOf(session, pack);
+  eq(q.attemptsLeft, 1, 'one click left after one wrong pick');
+  eq(q.options.find((o) => o.itemId === before).verdict, null, 'card still playable');
 });
-t('deck: whole deck visible; matched cards flip face-down in place', () => {
+t('deck: correct pick flips ✓ immediately; wrong pick flips nothing', () => {
   const pack = freshSession();
   const { session } = E.session.createSession(pack, 'deck', { shuffle: false });
-  let q = E.session.questionOf(session, pack);
-  eq(q.options.length, 3); // ALL cards present (stable positions)
-  ok(q.options.every((o) => !o.verdict), 'nothing answered at start');
-  const mine = q.options.find((o) => o.itemId === session.currentItemId);
-  ok(mine, 'correct option present');
-  eq(mine.parts, ['E', '=', 'mc²']); // RHS parts of the correct card
-  ok(q.options.every((o) => Array.isArray(o.parts) && o.parts.length > 0));
-  // correct match -> card flips face-down with verdict 'correct'
   const i1 = session.currentItemId;
-  E.session.answer(session, pack, i1);
-  q = E.session.questionOf(session, pack);
-  eq(q.options.length, 3); // still all present (positions unchanged)
-  eq(q.options.filter((o) => o.verdict).length, 1); // one face-down
-  eq(q.options.find((o) => o.itemId === i1).verdict, 'correct');
-  // wrong pick -> NOTHING is consumed; the wrong card stays playable
+  const r1 = E.session.answer(session, pack, i1);
+  ok(r1.correct);
+  eq(r1.remaining, 0, 'single-card group done after one correct');
+  eq(session.deckAttempts, 0, 'budget reset after group complete');
+  let q = E.session.questionOf(session, pack);
+  eq(q.options.find((o) => o.itemId === i1).verdict, 'correct', 'card flipped face-down');
+  // wrong pick on the NEXT question: flips nothing, spends a click
   const i2 = session.currentItemId;
-  const wrongCard = q.options.find((o) => !o.verdict && o.itemId !== i2);
-  E.session.answer(session, pack, wrongCard.itemId);
+  const wrongCard = q.options.find((o) => o.itemId !== i2 && !o.verdict);
+  const rw = E.session.answer(session, pack, wrongCard.itemId);
+  eq(rw.correct, false);
   q = E.session.questionOf(session, pack);
-  eq(q.options.filter((o) => o.verdict).length, 1); // still just one
-  eq(q.options.find((o) => o.itemId === wrongCard.itemId).verdict, null); // not consumed
-  eq(session.currentItemId, i2); // question unchanged
-  eq(session.stats.wrong, 1);
+  eq(q.options.find((o) => o.itemId === wrongCard.itemId).verdict, null, 'wrong card NOT consumed');
+  eq(session.currentItemId, i2, 'question unchanged');
 });
-t('deck: multi-answer groups — pick EVERY card equal to the question', () => {
+t('deck: budget exhausted with correct cards unflipped -> REVEAL (✗ on missed)', () => {
   const pack = bundledPack(); // trig pack: sin(2A) x2, cos(2A) x4, cos(A) x2
   E.storage.wipeAll();
   E.storage.savePack(pack);
   const d = E.session.createSession(pack, 'deck', { shuffle: false }).session;
-  // first question: sin(2A) -> group of 2
+  // first question: sin(2A) -> group of 2 -> budget 4
   let q = E.session.questionOf(d, pack);
   const g = q.groupIds;
   eq(g.length, 2);
-  // wrong pick on a non-group card: no advance, no consumption
-  const other = q.options.find((o) => !g.includes(o.itemId) && !o.verdict);
-  const rw = E.session.answer(d, pack, other.itemId);
-  eq(rw.correct, false);
-  eq(d.index, 0);
-  // pick both group cards -> advance only after the last one
+  eq(q.attemptsLeft, 4);
+  // spend all 4 clicks WITHOUT completing: pick the two wrong cards twice each
+  const wrongs = q.options.filter((o) => !g.includes(o.itemId) && !o.verdict).slice(0, 2);
+  for (let i = 0; i < 2; i++) E.session.answer(d, pack, wrongs[0].itemId);
+  for (let i = 0; i < 2; i++) E.session.answer(d, pack, wrongs[1].itemId);
+  // 4th click exhausted the budget -> reveal fired
+  q = E.session.questionOf(d, pack);
+  const verdicts = {};
+  for (const o of q.options) verdicts[o.itemId] = o.verdict;
+  eq(verdicts[g[0]], 'wrong', 'missed correct card flipped ✗');
+  eq(verdicts[g[1]], 'wrong', 'missed correct card flipped ✗');
+  eq(verdicts[wrongs[0].itemId], null, 'picked-wrong card stays playable (belongs to a future question)');
+  eq(d.status, 'running', 'reveal advances to the next question, session continues');
+});
+t('deck: multi-answer groups — stay on group until complete; budget = 2×size', () => {
+  const pack = bundledPack();
+  E.storage.wipeAll();
+  E.storage.savePack(pack);
+  const d = E.session.createSession(pack, 'deck', { shuffle: false }).session;
+  let q = E.session.questionOf(d, pack);
+  const g = q.groupIds; // sin(2A) -> 2 cards
+  eq(g.length, 2);
+  // pick the 1st member correct -> stays on the SAME group
   const r1 = E.session.answer(d, pack, g[0]);
   eq(r1.correct, true);
   eq(r1.remaining, 1);
-  eq(d.index, 1); // advanced to the 2nd member of the SAME group
-  eq(d.currentItemId, g[1]); // still the same question
+  eq(d.currentItemId, g[1], 'jumped to the 2nd member of the same group');
+  // pick the 2nd member correct -> group complete -> advance
   const r2 = E.session.answer(d, pack, g[1]);
   eq(r2.correct, true);
   eq(r2.remaining, 0);
   ok(d.index >= 2, 'advanced past the group');
-  // next question: cos(2A) -> group of 4
   q = E.session.questionOf(d, pack);
-  eq(q.prompt, 'cos(2A) = ?');
-  eq(q.groupIds.length, 4);
+  eq(q.prompt, 'cos(2A) = ?', 'next group: cos(2A)');
+  eq(q.groupIds.length, 4, 'cos(2A) has 4 members');
+  eq(q.attemptsLeft, 8, 'budget = 4 × 2');
+  eq(q.options.filter((o) => o.verdict).length, 2, 'both sin(2A) cards face-down ✓');
 });
 t('deck: shuffled queue stays on the group until every member is picked', () => {
   const pack = bundledPack();
@@ -294,6 +312,63 @@ t('deck: shuffled queue stays on the group until every member is picked', () => 
   eq(d.currentItemId, b, 'still the same group — jumped over the unrelated card');
   E.session.answer(d, pack, b); // pick the 2nd member
   ok(d.currentItemId !== a && d.currentItemId !== b, 'group complete -> advanced to the next question');
+});
+t('deck: session finishes after every card is flipped (correct or revealed)', () => {
+  const pack = freshSession();
+  const { session } = E.session.createSession(pack, 'deck', { shuffle: false });
+  let guard = 0;
+  while (session.status !== 'finished' && guard++ < 100) {
+    E.session.answer(session, pack, session.currentItemId);
+  }
+  eq(session.status, 'finished');
+  eq(session.stats.correct, 3);
+  eq(session.stats.wrong, 0);
+  const countById = {};
+  for (const c of session.completed) if (c.correct || c.revealed) countById[c.itemId] = true;
+  eq(countById.i1, true);
+  eq(countById.i2, true);
+  eq(countById.i3, true);
+});
+t('deck: reveal flips ✗ only on missed-correct; wrong picks stay for later', () => {
+  const pack = bundledPack();
+  E.storage.wipeAll();
+  E.storage.savePack(pack);
+  const d = E.session.createSession(pack, 'deck', { shuffle: false }).session;
+  let q = E.session.questionOf(d, pack);
+  const g = q.groupIds; // sin(2A) x2 -> budget 4
+  // 1 correct + 3 wrongs = 4 clicks; 2nd correct card never picked -> reveal
+  E.session.answer(d, pack, g[0]); // correct (1 click)
+  const wrongs = q.options.filter((o) => !g.includes(o.itemId) && !o.verdict);
+  E.session.answer(d, pack, wrongs[0].itemId);
+  E.session.answer(d, pack, wrongs[1].itemId);
+  const r4 = E.session.answer(d, pack, wrongs[0].itemId); // 4th click -> budget out
+  ok(!r4.correct);
+  q = E.session.questionOf(d, pack);
+  const verdicts = {};
+  for (const o of q.options) verdicts[o.itemId] = o.verdict;
+  eq(verdicts[g[0]], 'correct', 'picked-correct card stays ✓');
+  eq(verdicts[g[1]], 'wrong', 'missed-correct card flipped ✗');
+  eq(d.status, 'running', 'reveal advanced to the next question');
+});
+t('deck: shuffle never parks the cursor on a consumed card', () => {
+  const pack = freshSession();
+  const { session } = E.session.createSession(pack, 'deck', { shuffle: false });
+  // simulate mid-game state: i1 fully consumed, i2 consumed, i3 untouched
+  session.completed.push({ itemId: 'i1', correct: true, timeMs: 1 });
+  session.completed.push({ itemId: 'i2', correct: true, timeMs: 1 });
+  session.index = 0;
+  session.currentItemId = 'i1';
+  // force the shuffle to put the consumed i1 at the cursor position (index 0)
+  const realRandom = Math.random;
+  Math.random = () => 0.5;
+  try {
+    E.session.shuffleRemaining(session);
+  } finally {
+    Math.random = realRandom;
+  }
+  eq(session.currentItemId, 'i3', 'cursor parked on the only active card, not the consumed i1');
+  const q2 = E.session.questionOf(session, pack);
+  eq(q2.options.find((o) => o.itemId === session.currentItemId).verdict, null, 'cursor card is playable');
 });
 t('reverse: text answer, forgiving match', () => {
   const pack = freshSession();
@@ -413,7 +488,7 @@ t('bundled trig-angle pack: valid + parts build the full formula', () => {
   }
   ok(pack.items.some((it) => it.structure && it.structure.includes('/')), 'some item carries a fraction structure');
   ok(pack.items.some((it) => it.answerTokens.includes('−')), 'operators stay in content');
-  // deck matching on the bundled pack
+  // deck matching on the bundled pack (click budget = 2 × group size)
   E.storage.wipeAll();
   E.storage.savePack(pack);
   const d = E.session.createSession(pack, 'deck', { shuffle: false }).session;
@@ -422,13 +497,12 @@ t('bundled trig-angle pack: valid + parts build the full formula', () => {
   eq(dq.options.filter((o) => o.verdict).length, 0);
   ok(dq.options.some((o) => o.itemId === d.currentItemId), 'correct option among cards');
   const firstId = d.currentItemId;
-  ok(E.session.answer(d, pack, firstId).correct, 'matching the right card is correct');
+  const rr1 = E.session.answer(d, pack, firstId);
+  ok(rr1.correct, 'correct match registers');
   ok(!E.session.answer(d, pack, 'nonexistent').correct, 'wrong card is wrong');
   dq = E.session.questionOf(d, pack);
   eq(dq.options.length, 26); // positions unchanged
-  eq(dq.options.filter((o) => o.verdict).length, 1); // only the correct card flipped
-  eq(dq.options.find((o) => o.itemId === firstId).verdict, 'correct');
-  ok(dq.options.every((o) => !o.verdict || o.itemId === firstId));
+  eq(dq.options.find((o) => o.itemId === firstId).verdict, 'correct', 'correct card flips immediately');
   // full formula for one known item
   E.storage.wipeAll();
   const item1 = pack.items[0];
@@ -543,6 +617,85 @@ t('searchItems matches prompt and answer, difficulty filter', () => {
   eq(d3[0].id, 'i3');
   const tagged = E.search.searchItems(pack, '', { tag: 'motion' });
   eq(tagged.length, 1);
+});
+
+// ================= ui layout contract: deck pile scrolls independently =================
+console.log('\n== ui: deck pile scroll container ==');
+t('deck shell pins the page to the viewport (game-shell--deck)', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  ok(/\.game-shell--deck\s*\{/.test(css), '.game-shell--deck block exists');
+  ok(/\.game-shell--deck[^}]*overflow:\s*hidden/s.test(css), 'deck shell clips overflow (no body scroll)');
+  ok(/\.game-shell--deck[^}]*flex-direction:\s*column/s.test(css), 'deck shell is a flex column');
+});
+t('deck pile has its own scroll container (.match-scroll)', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  ok(/\.game-shell--deck\s+\.match-scroll\s*\{[^}]*overflow-y:\s*auto/s.test(css), 'pile scrolls vertically inside deck shell');
+  ok(/\.game-shell--deck\s+\.match-scroll\s*\{[^}]*min-height:\s*0/s.test(css), 'pile can shrink below content (flex child)');
+  ok(/\.game-shell--deck\s+\.match-scroll\s*\{[^}]*flex:\s*1/s.test(css), 'pile takes the remaining right-pane space');
+});
+t('deck scroll container does not touch construction-mode layout', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  // scroll rules must be scoped under .game-shell--deck (or be .match-scroll generic,
+  // which is only ever rendered by renderMatchRight), never under .game-shell alone.
+  ok(!/\.game-shell\s*\{[^}]*overflow-y:\s*auto/.test(css), 'plain .game-shell has no scroll rule');
+});
+t('play.js renders the pile inside .match-scroll and pins deck shell', () => {
+  const js = require('fs').readFileSync('js/ui/play.js', 'utf8');
+  ok(/class:\s*'match-scroll'/.test(js), 'renderMatchRight wraps the pile in .match-scroll');
+  ok(/game-shell--deck/.test(js), 'deck shell modifier applied in game()');
+  ok(/mode\.input\s*===\s*'match'\s*\?\s*' game-shell--deck'/.test(js), 'modifier only for deck (match input)');
+  ok(/classList\.remove\('game-shell--deck'\)/.test(js), 'results screen removes the pinned-shell modifier');
+});
+t('deck card formulas can shrink/wrap inside the card (no overflow)', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  ok(/\.match-card\s+\.formula\s*\{[^}]*min-width:\s*0;[^}]*max-width:\s*100%/.test(css),
+    'card formula flex item can shrink below content width');
+  ok(/\.match-card\s+\.formula-rhs\s*\{[^}]*max-width:\s*100%/.test(css),
+    'card formula-rhs is width-constrained so flex-wrap can trigger');
+  ok(/\.match-card\s+\.frac-num[^}]*flex-wrap:\s*wrap/.test(css) &&
+     /\.match-card\s+\.frac-den[^}]*flex-wrap:\s*wrap/.test(css),
+    'fraction rows wrap instead of poking out of the card');
+});
+t('deck formula wrap rules never leak into construction mode', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  // construction renders .built-answer / .token-* / generic .formula; the wrap
+  // rules must be scoped under .match-card only, so plain .formula / .formula-rhs
+  // stay shrink-to-fit as before.
+  ok(!/\bformula(?:-rhs)?\s*\{[^}]*min-width:\s*0/.test(css.replace(/\.match-card\s+\.formula[^}]*\}/g, '')),
+    'no unscoped .formula/.formula-rhs min-width rule outside .match-card');
+});
+
+// ================= ui: deck drag-and-drop selection =================
+console.log('\n== ui: deck drag-and-drop selection ==');
+t('active deck cards are draggable and carry the itemId on dragstart', () => {
+  const js = require('fs').readFileSync('js/ui/play.js', 'utf8');
+  ok(/draggable:\s*'true'/.test(js), 'playable match card gets draggable=true');
+  ok(/setData\(['"]text\/plain['"],\s*o\.itemId\)/.test(js), 'dragstart stores the card itemId in dataTransfer');
+  ok(/effectAllowed\s*=\s*'move'/.test(js), 'drag effect is move');
+});
+t('left target area accepts the drop and submits the same selection', () => {
+  const js = require('fs').readFileSync('js/ui/play.js', 'utf8');
+  ok(/addEventListener\(['"]dragover['"]/.test(js), 'dragover listener allows the drop');
+  ok(/addEventListener\(['"]drop['"]/.test(js), 'drop listener on the left question card');
+  ok(/getData\(['"]text\/plain['"]\)/.test(js), 'drop reads the dragged itemId');
+  ok(/submitMatch\(itemId,\s*btnEl\)/.test(js), 'drop reuses the click selection path');
+});
+t('drop wiring is deck-only: gated on match input', () => {
+  const js = require('fs').readFileSync('js/ui/play.js', 'utf8');
+  ok(/if \(mode\.input === 'match'\) wireDeckDropTarget\(card\)/.test(js),
+    'drop target wired only for match (deck) input');
+  ok(/function wireDeckDropTarget/.test(js), 'deck drop-target helper defined');
+});
+t('completed cards are no longer draggable', () => {
+  const js = require('fs').readFileSync('js/ui/play.js', 'utf8');
+  ok(/draggable: 'false'/.test(js), 'face-down cards render with draggable=false');
+  ok(/setAttribute\(['"]draggable['"],\s*['"]false['"]\)/.test(js),
+    '2nd correct match flips the card to non-draggable');
+});
+t('css provides dragging + drop-target feedback scoped to deck', () => {
+  const css = require('fs').readFileSync('css/style.css', 'utf8');
+  ok(/\.match-card\.dragging\s*\{/.test(css), 'source card visual exists while dragging');
+  ok(/\.question-card\.drop-target\s*\{/.test(css), 'left target highlight exists on dragover');
 });
 
 // ================= performance (P0 targets) =================

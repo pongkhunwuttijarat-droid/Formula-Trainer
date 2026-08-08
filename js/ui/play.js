@@ -178,7 +178,7 @@
       return;
     }
 
-    const shell = el('div', { class: 'game-shell' });
+    const shell = el('div', { class: 'game-shell' + (mode.input === 'match' ? ' game-shell--deck' : '') });
     root.append(shell);
 
     // progress header
@@ -223,9 +223,16 @@
 
     // ---------- renderers ----------
     function itemProgress() {
-      return mode.loop
-        ? { done: session.completed.length, total: session.completed.length + session.queue.length }
-        : { done: session.index, total: session.queue.length };
+      if (mode.loop) return { done: session.completed.length, total: session.completed.length + session.queue.length };
+      if (mode.multiSelect && mode.input === 'match') {
+        // deck: progress = cards already flipped face-down (✓ or ✗) — index
+        // is not linear because the group jumps between scattered members
+        const countById = {};
+        for (const c of session.completed) if (c.correct || c.revealed) countById[c.itemId] = true;
+        const done = pack.items.filter((it) => countById[it.id]).length;
+        return { done, total: pack.items.length };
+      }
+      return { done: session.index, total: session.queue.length };
     }
 
     // shared pool/submit refs so slot-removal can re-sync the right pane
@@ -300,11 +307,16 @@
       };
       card.append(dynArea);
       if (mode.input === 'match' && q.groupIds && q.groupIds.length > 1) {
-        const doneInGroup = q.groupIds.filter((gid) => (q.options.find((o) => o.itemId === gid) || {}).verdict).length;
+        const doneInGroup = q.groupIds.filter((gid) => {
+          const opt = q.options.find((o) => o.itemId === gid);
+          return !!opt && opt.verdict === 'correct';
+        }).length;
+        const hint = 'ชุดนี้มี ' + q.groupIds.length + ' ใบที่เท่ากัน — เลือกให้ครบ (เหลือ ' + (q.groupIds.length - doneInGroup) + ' ใบ)';
         card.append(el('div', { class: 'group-hint' },
-          'ชุดนี้มี ' + q.groupIds.length + ' ใบที่เท่ากัน — เลือกให้ครบ (เหลือ ' + (q.groupIds.length - doneInGroup) + ' ใบ)'));
+          q.attemptsLeft !== undefined ? hint + ' · กดได้อีก ' + q.attemptsLeft + ' ครั้ง' : hint));
       }
       leftPane.append(card);
+      if (mode.input === 'match') wireDeckDropTarget(card);
       gstate.refresh();
 
       // ----- RIGHT: interaction per input type -----
@@ -356,26 +368,67 @@
       const remaining = q.options.filter((o) => !o.verdict).length;
       q.options.forEach((o, i) => {
         if (o.verdict) {
-          // face-down card, stays at its original position; ✕ = answered wrong, ✓ = matched
+          // face-down card, stays at its original position; ✕ = revealed/missed, ✓ = matched
           const isWrong = o.verdict === 'wrong';
           grid.append(el('button', {
             class: 'match-card matched' + (isWrong ? ' matched-wrong' : ''),
-            type: 'button', disabled: true, tabindex: '-1',
+            type: 'button', disabled: true, tabindex: '-1', draggable: 'false',
             'aria-label': isWrong ? 'ตอบผิด' : 'จับคู่แล้ว',
           }, el('span', { class: 'match-mark' }, isWrong ? '✕' : '✓')));
           return;
         }
         const b = el('button', {
           class: 'match-card', type: 'button', dataset: { itemId: o.itemId }, 'aria-label': 'การ์ดสูตร ' + (i + 1),
+          draggable: 'true',
           onclick: () => submitMatch(o.itemId, b),
-        }, el('span', { class: 'formula' }, FTUI.renderRhs(o.structure, o.parts)));
+          ondragstart: (e) => {
+            e.dataTransfer.setData('text/plain', o.itemId);
+            e.dataTransfer.effectAllowed = 'move';
+            b.classList.add('dragging');
+          },
+          ondragend: () => b.classList.remove('dragging'),
+        },
+          el('span', { class: 'formula' }, FTUI.renderRhs(o.structure, o.parts))
+        );
         grid.append(b);
       });
+      const attemptsLabel = q.attemptsLeft !== undefined
+        ? ' — เหลืออีก ' + q.attemptsLeft + ' ครั้ง'
+        : '';
       rightPane.append(
         el('div', { class: 'match-label' },
-          'กองการ์ด — เลือกทุกใบที่เท่ากับโจทย์ฝั่งซ้าย (เหลือ ' + remaining + ' ใบ)'),
-        grid
+          'กองการ์ด — เลือกทุกใบที่เท่ากับโจทย์ฝั่งซ้าย (เหลือ ' + remaining + ' ใบ)' + attemptsLabel),
+        el('div', { class: 'match-scroll' }, grid)
       );
+    }
+
+    // Deck DnD: the LEFT problem/target area accepts a dragged card. Native
+    // HTML5 drag events, deck-only — construction/reverse never wire this up.
+    function wireDeckDropTarget(target) {
+      let depth = 0;
+      target.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        depth += 1;
+        target.classList.add('drop-target');
+      });
+      target.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      });
+      target.addEventListener('dragleave', () => {
+        depth = Math.max(0, depth - 1);
+        if (depth === 0) target.classList.remove('drop-target');
+      });
+      target.addEventListener('drop', (e) => {
+        e.preventDefault();
+        depth = 0;
+        target.classList.remove('drop-target');
+        const itemId = e.dataTransfer && e.dataTransfer.getData('text/plain');
+        if (!itemId) return;
+        // re-find the source card so the same visual feedback as clicking runs
+        const btnEl = rightPane.querySelector('.match-card[data-item-id="' + itemId + '"]');
+        submitMatch(itemId, btnEl);
+      });
     }
 
     function submit() {
@@ -391,31 +444,62 @@
 
     function submitMatch(itemId, btnEl) {
       if (mode.multiSelect) {
-        // multi-select (deck): keep matching until every equal card is picked
+        // multi-select (deck): keep matching until every equal card is picked.
+        // Click budget = 2 × group size; every pick (right or wrong) spends
+        // one. Correct pick flips ✓; when the budget runs out with correct
+        // cards still unflipped, the group is revealed (✓ / ✗).
         const result = FTEngine.session.answer(session, pack, itemId);
         if (result.error) { toast(result.error, 'error'); return; }
         if (result.correct) {
-          btnEl.classList.add('matched');
-          btnEl.disabled = true;
-          btnEl.replaceChildren(el('span', { class: 'match-mark' }, '✓'));
-          btnEl.setAttribute('aria-label', 'จับคู่แล้ว');
+          // correct pick -> flip face-down, no longer selectable
+          if (btnEl) {
+            btnEl.classList.add('matched');
+            btnEl.disabled = true;
+            btnEl.setAttribute('draggable', 'false');
+            btnEl.classList.remove('dragging');
+            btnEl.replaceChildren(el('span', { class: 'match-mark' }, '✓'));
+            btnEl.setAttribute('aria-label', 'จับคู่แล้ว');
+          }
           clear(feedbackArea);
           if (result.remaining > 0) {
             feedbackArea.append(el('div', { class: 'feedback feedback-correct', role: 'status' },
-              '✓ ถูกต้อง! ชุดนี้เหลืออีก ' + result.remaining + ' ใบ — จับคู่ต่อไปได้เลย'));
+              '✓ ถูกต้อง! ชุดนี้เหลืออีก ' + result.remaining + ' ใบ — เหลืออีก ' + result.attemptsLeft + ' ครั้ง'));
           } else {
             feedbackArea.append(el('div', { class: 'feedback feedback-correct', role: 'status' },
               '✓ ครบทุกใบในชุดนี้!'));
             setTimeout(() => FTUI.router.render(), 500); // advance to the next question
           }
+        } else if (result.revealed) {
+          // budget exhausted with correct cards still unflipped -> REVEAL:
+          // flip every missed-correct card ✗ (the engine already recorded them)
+          rightPane.querySelectorAll('.match-card').forEach((b) => {
+            if (b.dataset.itemId && b.dataset.itemId !== itemId && !b.disabled) {
+              b.classList.add('matched', 'matched-wrong');
+              b.disabled = true;
+              b.setAttribute('draggable', 'false');
+              b.replaceChildren(el('span', { class: 'match-mark' }, '✕'));
+              b.setAttribute('aria-label', 'ตอบผิด');
+            }
+          });
+          if (btnEl) {
+            btnEl.classList.add('wrong');
+            setTimeout(() => btnEl.classList.remove('wrong'), 700);
+          }
+          clear(feedbackArea);
+          feedbackArea.append(el('div', { class: 'feedback feedback-wrong', role: 'status' },
+            '✕ หมดโอกาส! เฉลย: ใบที่ถูกคว่ำ ✓, ใบที่พลาด ✗'));
+          setTimeout(() => FTUI.router.render(), 1200); // show the reveal, then advance
         } else {
-          btnEl.classList.add('wrong');
-          setTimeout(() => btnEl.classList.remove('wrong'), 700);
+          // wrong pick, budget not exhausted -> flash red, question stays
+          if (btnEl) {
+            btnEl.classList.add('wrong');
+            setTimeout(() => btnEl.classList.remove('wrong'), 700);
+          }
           const cur = pack.items.find((i) => i.id === session.currentItemId);
           const lhs = cur ? FTEngine.lhsOfPrompt(cur.prompt) : '?';
           clear(feedbackArea);
           feedbackArea.append(el('div', { class: 'feedback feedback-wrong', role: 'status' },
-            '✕ ผิด — ใบนี้ไม่ตรงกับ "' + lhs + '"'));
+            '✕ ผิด — ใบนี้ไม่ตรงกับ "' + lhs + '" (เหลืออีก ' + result.attemptsLeft + ' ครั้ง)'));
         }
         FTUI.sessionIndicatorRefresh();
         return;
@@ -469,6 +553,7 @@
 
     function renderResults() {
       clear(shell);
+      shell.classList.remove('game-shell--deck'); // results page flows normally (not viewport-pinned)
       const acc = FTEngine.session.sessionAccuracy(session);
       const s = session.stats;
       const elapsed = FTEngine.session.sessionElapsed(session);

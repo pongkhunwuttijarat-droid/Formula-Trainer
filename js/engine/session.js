@@ -30,6 +30,9 @@
       input: ['tokens', 'text', 'match'].includes(def.input) ? def.input : 'tokens',
       loop: !!def.loop,
       multiSelect: !!def.multiSelect,
+      // number of correct matches a card needs before it is consumed/flipped
+      // (deck mode uses 2; other modes default to the classic 1)
+      rounds: def.rounds || 1,
       groupOf: def.groupOf,
       questionOf: def.questionOf,
       check: def.check,
@@ -104,6 +107,11 @@
       input: '',
       completed: [],
       wrongIds: [],
+      // deck (multi-select): clicks spent on the CURRENT group. Budget =
+      // group size × 2; every pick (right or wrong) spends one. When the
+      // budget runs out with correct cards still unflipped, the group is
+      // revealed (✓ for picked-correct, ✗ for missed-correct) and we advance.
+      deckAttempts: 0,
       stats: { attempts: 0, correct: 0, wrong: 0, timeMs: 0 },
       startedAt: now,
       finishedAt: 0,
@@ -179,7 +187,14 @@
     return { correct: verdict, done, session, item };
   }
 
-  /** Multi-select answer (deck): the question = a group of equal cards. */
+  /**
+   * Multi-select answer (deck): the question = a group of equal cards.
+   * The player gets `groupSize × 2` clicks total for the group. Every pick
+   * (correct OR wrong) spends one click. A correct pick flips that card
+   * face-down (✓); a wrong pick flashes and spends a click without flipping.
+   * If the budget runs out before every correct card is flipped, the group is
+   * revealed: picked-correct cards keep ✓, missed-correct cards flip ✗.
+   */
   function answerMultiSelect(session, pack, pickedId, mode) {
     const item = itemOf(pack, session.currentItemId);
     if (!item) return { error: 'session ไม่ถูกต้อง' };
@@ -202,21 +217,38 @@
     session.completed.push({ itemId: targetId, correct: verdict, timeMs: ansTime });
     if (!verdict && session.wrongIds.indexOf(targetId) === -1) session.wrongIds.push(targetId);
 
-    // stay on the CURRENT group until every equal card is consumed
-    const remaining = groupIds.filter((gid) => !isConsumedCorrect(session, gid)).length;
-    if (remaining > 0) {
-      // jump to the next unconsumed member of this group (members may be
-      // scattered anywhere in a shuffled queue)
-      const nextMember = groupIds.find((gid) => !isConsumedCorrect(session, gid));
+    // click budget = 2 × group size; every pick (right or wrong) spends one
+    const budget = groupIds.length * 2;
+    session.deckAttempts = (session.deckAttempts || 0) + 1;
+    const attemptsLeft = Math.max(0, budget - session.deckAttempts);
+
+    // correct cards still not flipped (revealed ✗ cards count as done)
+    const missing = groupIds.filter((gid) => !isCardDone(session, gid));
+    let revealed = false;
+
+    if (verdict && missing.length === 0) {
+      // every correct card flipped -> group complete, advance
+      advanceDeckScan(session);
+      session.deckAttempts = 0;
+    } else if (attemptsLeft === 0 && missing.length > 0) {
+      // budget exhausted with correct cards still unflipped -> REVEAL:
+      // mark every missed-correct card as a wrong answer so the UI flips ✗
+      for (const gid of missing) {
+        session.completed.push({ itemId: gid, correct: false, revealed: true, timeMs: 0 });
+        if (session.wrongIds.indexOf(gid) === -1) session.wrongIds.push(gid);
+      }
+      revealed = true;
+      advanceDeckScan(session);
+      session.deckAttempts = 0;
+    } else if (verdict) {
+      // correct pick but group not done yet — stay on the group, jump to the
+      // next unconsumed member (members may be scattered in a shuffled queue)
+      const nextMember = groupIds.find((gid) => !isCardDone(session, gid));
       session.index = session.queue.indexOf(nextMember);
       session.currentItemId = nextMember;
-    } else {
-      // group complete -> advance past every consumed card
-      while (session.index < session.queue.length && isConsumedCorrect(session, session.queue[session.index])) {
-        session.index += 1;
-      }
-      session.currentItemId = session.index < session.queue.length ? session.queue[session.index] : null;
     }
+    // wrong pick without budget exhaustion: question stays exactly where it is
+
     const done = session.currentItemId === null;
     if (done) {
       session.status = 'finished';
@@ -229,11 +261,55 @@
       session.input = '';
       storage().saveSession(session);
     }
-    return { correct: verdict, done, session, item, remaining };
+    return {
+      correct: verdict,
+      done,
+      session,
+      item,
+      remaining: missing.length,
+      attemptsLeft,
+      revealed,
+    };
   }
 
+  /** True when a card already has a CORRECT match (flipped face-down). */
   function isConsumedCorrect(session, itemId) {
     return session.completed.some((c) => c.itemId === itemId && c.correct);
+  }
+
+  /**
+   * True when a card is DONE for this session: either flipped ✓ (correct) or
+   * revealed ✗ (missed when the click budget ran out). Revealed cards must be
+   * skipped by the cursor scan too, or the deck parks on a face-down card.
+   */
+  function isCardDone(session, itemId) {
+    return session.completed.some((c) => c.itemId === itemId && (c.correct || c.revealed));
+  }
+
+  /**
+   * Advance the deck cursor to the next card that still needs a correct match.
+   * Done cards (flipped ✓ or revealed ✗) are skipped — they sit face-down at
+   * their original spot.
+   */
+  function advanceDeckScan(session) {
+    const len = session.queue.length;
+    if (len === 0) {
+      session.index = 0;
+      session.currentItemId = null;
+      return;
+    }
+    let idx = session.index;
+    for (let steps = 0; steps < len; steps++) {
+      idx = (idx + 1) % len;
+      if (!isCardDone(session, session.queue[idx])) {
+        session.index = idx;
+        session.currentItemId = session.queue[idx];
+        return;
+      }
+    }
+    // every card consumed -> session finished
+    session.index = len;
+    session.currentItemId = null;
   }
 
   function pauseSession(session) {
@@ -287,6 +363,17 @@
       const rest = shuffleArray(session.queue.slice(session.index));
       session.queue = session.queue.slice(0, session.index).concat(rest);
       session.currentItemId = session.index < session.queue.length ? session.queue[session.index] : null;
+      // deck (multi-select): never park the cursor on an already-flipped card —
+      // done cards (✓ or ✗) sit face-down alongside active ones, so a shuffle
+      // could otherwise soft-lock the game (face-down cards can't be picked)
+      const mode = getMode(session.modeId);
+      if (
+        mode && mode.multiSelect && mode.input === 'match' &&
+        session.currentItemId !== null &&
+        isCardDone(session, session.currentItemId)
+      ) {
+        advanceDeckScan(session);
+      }
     }
     session.shuffled = true;
     storage().saveSession(session);
