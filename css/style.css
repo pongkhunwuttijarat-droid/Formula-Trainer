@@ -399,7 +399,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .slot.filled:hover { border-color: var(--accent); }
 
 /* match cards (deck) */
+.match-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .match-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.match-tools .match-label { margin-bottom: 0; }
 .match-wall {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -421,6 +423,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 }
 .match-card:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .match-card:active:not(:disabled) { transform: translateY(1px); }
+.match-card.dragging { opacity: 0.5; }
+.match-card.swap-target { outline: 2px dashed var(--accent); outline-offset: 2px; }
 .match-card .formula { font-size: 0.92rem; font-weight: 600; line-height: 1.4; }
 /* deck only: card formulas must never overflow the card. The formula is a flex
    item with min-width:auto by default, so it cannot shrink below its content

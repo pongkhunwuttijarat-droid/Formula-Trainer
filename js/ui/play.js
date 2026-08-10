@@ -208,6 +208,8 @@
     let timer = null;
     let answered = false;
     const gstate = { built: [], refresh: null, textInput: null, options: null };
+    // wall layout: permutation of option indices — swap/shuffle changes positions
+    let wallOrder = null;
 
     // keyboard (attached once)
     shell.addEventListener('keydown', (e) => {
@@ -366,7 +368,17 @@
     function renderMatchRight(q) {
       const grid = el('div', { class: 'match-wall' });
       const remaining = q.options.filter((o) => !o.verdict).length;
-      q.options.forEach((o, i) => {
+      if (!wallOrder || wallOrder.length !== q.options.length) {
+        wallOrder = q.options.map((_, i) => i);
+        if (session.shuffled) { // "สับ" at setup: random card positions too
+          for (let i = wallOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = wallOrder[i]; wallOrder[i] = wallOrder[j]; wallOrder[j] = tmp;
+          }
+        }
+      }
+      for (const oi of wallOrder) {
+        const o = q.options[oi];
         if (o.verdict) {
           // face-down card, stays at its original position; ✕ = revealed/missed, ✓ = matched
           const isWrong = o.verdict === 'wrong';
@@ -375,10 +387,10 @@
             type: 'button', disabled: true, tabindex: '-1', draggable: 'false',
             'aria-label': isWrong ? 'ตอบผิด' : 'จับคู่แล้ว',
           }, el('span', { class: 'match-mark' }, isWrong ? '✕' : '✓')));
-          return;
+          continue;
         }
         const b = el('button', {
-          class: 'match-card', type: 'button', dataset: { itemId: o.itemId }, 'aria-label': 'การ์ดสูตร ' + (i + 1),
+          class: 'match-card', type: 'button', dataset: { itemId: o.itemId }, 'aria-label': 'การ์ดสูตร ' + (oi + 1),
           draggable: 'true',
           onclick: () => submitMatch(o.itemId, b),
           ondragstart: (e) => {
@@ -387,19 +399,66 @@
             b.classList.add('dragging');
           },
           ondragend: () => b.classList.remove('dragging'),
+          // drop ON another card = swap their wall positions (สลับตำแหน่งการ์ด)
+          ondragover: (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            b.classList.add('swap-target');
+          },
+          ondragleave: () => b.classList.remove('swap-target'),
+          ondrop: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            b.classList.remove('swap-target');
+            const srcId = e.dataTransfer && e.dataTransfer.getData('text/plain');
+            if (srcId && srcId !== o.itemId) swapWallCards(srcId, o.itemId);
+          },
         },
           el('span', { class: 'formula' }, FTUI.renderRhs(o.structure, o.parts))
         );
         grid.append(b);
-      });
+      }
       const attemptsLabel = q.attemptsLeft !== undefined
         ? ' — เหลืออีก ' + q.attemptsLeft + ' ครั้ง'
         : '';
       rightPane.append(
-        el('div', { class: 'match-label' },
-          'กองการ์ด — เลือกทุกใบที่เท่ากับโจทย์ฝั่งซ้าย (เหลือ ' + remaining + ' ใบ)' + attemptsLabel),
+        el('div', { class: 'match-tools' },
+          el('div', { class: 'match-label' },
+            'กองการ์ด — เลือกทุกใบที่เท่ากับโจทย์ฝั่งซ้าย (เหลือ ' + remaining + ' ใบ)' + attemptsLabel),
+          el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: shuffleWall },
+            'สับตำแหน่งการ์ด')),
         el('div', { class: 'match-scroll' }, grid)
       );
+    }
+
+    /** Swap the wall positions of two cards (identified by item id). */
+    function swapWallCards(idA, idB) {
+      if (!wallOrder) return;
+      const posA = wallOrder.findIndex((oi) => qOf(oi).itemId === idA);
+      const posB = wallOrder.findIndex((oi) => qOf(oi).itemId === idB);
+      if (posA === -1 || posB === -1 || posA === posB) return;
+      const tmp = wallOrder[posA]; wallOrder[posA] = wallOrder[posB]; wallOrder[posB] = tmp;
+      render();
+    }
+    function qOf(oi) {
+      const qq = FTEngine.session.questionOf(session, pack);
+      return qq.options[oi];
+    }
+
+    /** Randomize the wall positions of the playable cards (matched stay pinned). */
+    function shuffleWall() {
+      if (!wallOrder) return;
+      const qq = FTEngine.session.questionOf(session, pack);
+      const playable = [];
+      wallOrder.forEach((oi, pos) => { if (!qq.options[oi].verdict) playable.push(pos); });
+      if (playable.length < 2) return;
+      const cards = playable.map((pos) => wallOrder[pos]);
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
+      }
+      playable.forEach((pos, i) => { wallOrder[pos] = cards[i]; });
+      render();
     }
 
     // Deck DnD: the LEFT problem/target area accepts a dragged card. Native
